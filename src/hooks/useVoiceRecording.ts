@@ -120,23 +120,27 @@ export const useVoiceRecording = () => {
     }
   }, [recordingState.audioUrl]);
 
-  const createVoiceRecording = useCallback((): VoiceRecording | null => {
+  const createVoiceRecording = useCallback(async (): Promise<VoiceRecording | null> => {
     if (!recordingState.audioUrl) return null;
 
-    // Convert URL back to Blob
-    return fetch(recordingState.audioUrl)
-      .then(response => response.blob())
-      .then(blob => ({
+    try {
+      // Convert URL back to Blob
+      const response = await fetch(recordingState.audioUrl);
+      const blob = await response.blob();
+      
+      const recording: VoiceRecording = {
         id: Date.now().toString(),
         audioBlob: blob,
         duration: recordingState.duration,
         createdAt: new Date(),
-      }))
-      .then(recording => {
-        resetRecording();
-        return recording;
-      })
-      .catch(() => null);
+      };
+      
+      resetRecording();
+      return recording;
+    } catch (error) {
+      console.error('Error creating voice recording:', error);
+      return null;
+    }
   }, [recordingState.audioUrl, recordingState.duration, resetRecording]);
 
   return {
