@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -99,5 +100,63 @@
 
   body {
     @apply bg-background text-foreground;
+    /* Improve touch scrolling on iOS */
+    -webkit-overflow-scrolling: touch;
+    /* Prevent zooming on input focus on iOS */
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Mobile-specific improvements */
+  @media (max-width: 768px) {
+    /* Ensure tap targets are at least 44px */
+    button, 
+    [role="button"], 
+    input[type="button"], 
+    input[type="submit"], 
+    .btn {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Better touch scrolling */
+    .scroll-area {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* Smooth scrolling for anchor links */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Focus styles for better accessibility */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+
+  /* Remove default button styles on touch devices */
+  button {
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Custom animations for mobile interactions */
+@layer utilities {
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+  
+  .touch-pan-x {
+    touch-action: pan-x;
+  }
+  
+  .touch-none {
+    touch-action: none;
+  }
+
+  /* Smooth transforms for better mobile performance */
+  .transform-gpu {
+    transform: translateZ(0);
   }
 }
