@@ -56,10 +56,10 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
       return;
     }
 
-    // Create voice recording object
+    // Create voice recording object with audioBlob instead of audioUrl
     const voiceRecording = {
       id: Date.now().toString(),
-      audioUrl: URL.createObjectURL(recordingBlob),
+      audioBlob: recordingBlob,
       duration: 0, // Will be calculated when needed
       createdAt: new Date(),
     };
