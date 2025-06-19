@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { EnhancedMobileNavigation } from '@/components/enhanced-mobile-navigation';
 import { Button } from '@/components/ui/button';
@@ -16,12 +15,14 @@ import { useToast } from '@/hooks/use-toast';
 import { CleanCard, CleanCardContent, CleanCardHeader, CleanCardTitle } from '@/components/ui/clean-card';
 import { SimpleAudioRecorder } from '@/components/ui/simple-audio-recorder';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { CalendarRecordingModal } from '@/components/ui/calendar-recording-modal';
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { recordingState, startRecording, stopRecording, resetRecording, createVoiceRecording } = useVoiceRecording();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [showAlarmDialog, setShowAlarmDialog] = useState(false);
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [alarmTime, setAlarmTime] = useState('');
   const [alarmLabel, setAlarmLabel] = useState('');
   const { addAlarm, alarms } = useAlarmStore();
@@ -32,6 +33,32 @@ const Index = () => {
     if (hour < 12) return 'Good morning';
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDay = new Date(date);
+    selectedDay.setHours(0, 0, 0, 0);
+
+    // Prevent selecting past dates
+    if (selectedDay < today) {
+      toast({
+        title: "Invalid Date",
+        description: "Cannot select past dates",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedDate(date);
+
+    // If it's a future date, open the recording modal
+    if (selectedDay > today) {
+      setShowCalendarModal(true);
+    }
   };
 
   const handleSaveAlarm = async () => {
@@ -189,8 +216,15 @@ const Index = () => {
             <Calendar
               mode="single"
               selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
+              onSelect={handleDateSelect}
               className="w-full"
+              disabled={(date) => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const checkDate = new Date(date);
+                checkDate.setHours(0, 0, 0, 0);
+                return checkDate < today;
+              }}
               classNames={{
                 months: "flex w-full flex-col space-y-4",
                 month: "space-y-4 w-full flex flex-col",
@@ -228,6 +262,13 @@ const Index = () => {
           </Button>
         )}
       </div>
+
+      {/* Calendar Recording Modal */}
+      <CalendarRecordingModal
+        isOpen={showCalendarModal}
+        onClose={() => setShowCalendarModal(false)}
+        selectedDate={selectedDate}
+      />
 
       {/* Create Alarm Dialog */}
       <Dialog open={showAlarmDialog} onOpenChange={setShowAlarmDialog}>

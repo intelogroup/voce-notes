@@ -7,22 +7,30 @@ import { Link } from 'react-router-dom';
 import { CleanCard, CleanCardContent, CleanCardHeader, CleanCardTitle } from '@/components/ui/clean-card';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useTheme } from 'next-themes';
+import { EnhancedMobileNavigation } from '@/components/enhanced-mobile-navigation';
 
 const Settings = () => {
   const { theme } = useTheme();
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Link to="/">
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold">Settings</h1>
+      {/* Top Navigation */}
+      <nav className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+        <div className="container flex h-16 items-center justify-between px-4">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="outline" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <h1 className="text-2xl font-bold">Settings</h1>
+          </div>
         </div>
+      </nav>
 
+      <EnhancedMobileNavigation />
+
+      <div className="container mx-auto px-4 py-6 pb-20">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Theme */}
           <CleanCard>
