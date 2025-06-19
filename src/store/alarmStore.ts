@@ -25,6 +25,7 @@ interface AlarmStore {
   addAlarm: (alarm: Omit<Alarm, 'id' | 'createdAt'>) => void;
   updateAlarm: (id: string, updates: Partial<Alarm>) => void;
   deleteAlarm: (id: string) => void;
+  removeAlarm: (id: string) => void;
   toggleAlarm: (id: string) => void;
 }
 
@@ -50,6 +51,10 @@ export const useAlarmStore = create<AlarmStore>()(
           ),
         })),
       deleteAlarm: (id) =>
+        set((state) => ({
+          alarms: state.alarms.filter((alarm) => alarm.id !== id),
+        })),
+      removeAlarm: (id) =>
         set((state) => ({
           alarms: state.alarms.filter((alarm) => alarm.id !== id),
         })),

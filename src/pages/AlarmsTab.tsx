@@ -36,13 +36,13 @@ const AlarmsTab = () => {
   };
 
   const AlarmCard = ({ alarm, showDate = false }: { alarm: any, showDate?: boolean }) => (
-    <CleanCard className="transition-all hover:shadow-md">
+    <CleanCard className="transition-all hover:shadow-sm border border-border/50">
       <CleanCardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="text-2xl font-bold">{alarm.time}</div>
-              <Badge variant={alarm.isEnabled ? "default" : "secondary"}>
+              <div className="text-2xl font-semibold text-foreground">{alarm.time}</div>
+              <Badge variant={alarm.isEnabled ? "default" : "secondary"} className="text-xs">
                 {alarm.isEnabled ? "Active" : "Inactive"}
               </Badge>
             </div>
@@ -64,14 +64,15 @@ const AlarmsTab = () => {
             <Switch
               checked={alarm.isEnabled}
               onCheckedChange={() => toggleAlarm(alarm.id)}
+              className="data-[state=checked]:bg-primary"
             />
-            <Button variant="ghost" size="icon" className="h-8 w-8">
+            <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-muted">
               <Edit className="h-4 w-4" />
             </Button>
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8 text-destructive"
+              className="h-8 w-8 text-destructive hover:bg-destructive/10"
               onClick={() => removeAlarm(alarm.id)}
             >
               <Trash2 className="h-4 w-4" />
@@ -83,8 +84,8 @@ const AlarmsTab = () => {
   );
 
   const EmptyState = ({ message }: { message: string }) => (
-    <div className="text-center py-8">
-      <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+    <div className="text-center py-12">
+      <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground/50" />
       <p className="text-muted-foreground">{message}</p>
     </div>
   );
@@ -92,18 +93,18 @@ const AlarmsTab = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <nav className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+      <nav className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-sm border-b border-border/50">
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-4">
             <Link to="/">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" className="hover:bg-muted">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
             <h1 className="text-xl font-semibold">Alarms</h1>
           </div>
           <Link to="/create-alarm">
-            <Button size="sm">
+            <Button size="sm" className="bg-primary hover:bg-primary/90">
               <Plus className="h-4 w-4 mr-2" />
               New
             </Button>
@@ -121,27 +122,27 @@ const AlarmsTab = () => {
             placeholder="Search alarms..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 bg-background border-border/50 focus:border-primary"
           />
         </div>
 
         {/* Stats Overview */}
         <div className="grid grid-cols-3 gap-4">
-          <CleanCard>
+          <CleanCard className="border-border/50">
             <CleanCardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">{todayAlarms.length}</div>
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{todayAlarms.length}</div>
               <div className="text-sm text-muted-foreground">Today</div>
             </CleanCardContent>
           </CleanCard>
-          <CleanCard>
+          <CleanCard className="border-border/50">
             <CleanCardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">{upcomingAlarms.length}</div>
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">{upcomingAlarms.length}</div>
               <div className="text-sm text-muted-foreground">Upcoming</div>
             </CleanCardContent>
           </CleanCard>
-          <CleanCard>
+          <CleanCard className="border-border/50">
             <CleanCardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-gray-600">{pastAlarms.length}</div>
+              <div className="text-2xl font-bold text-gray-600 dark:text-gray-400">{pastAlarms.length}</div>
               <div className="text-sm text-muted-foreground">Past</div>
             </CleanCardContent>
           </CleanCard>
@@ -149,10 +150,25 @@ const AlarmsTab = () => {
 
         {/* Alarm Tabs */}
         <Tabs defaultValue="today" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="today">Today</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
-            <TabsTrigger value="past">Past</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 bg-muted/50 p-1 h-10">
+            <TabsTrigger 
+              value="today" 
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
+            >
+              Today
+            </TabsTrigger>
+            <TabsTrigger 
+              value="upcoming"
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
+            >
+              Upcoming
+            </TabsTrigger>
+            <TabsTrigger 
+              value="past"
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all"
+            >
+              Past
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="today" className="space-y-4 mt-6">
