@@ -4,22 +4,87 @@ import { MobileNavigation } from '@/components/MobileNavigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
-import { Mic, Bell, User } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Mic, Bell, User, Play, Square, RotateCcw, Check } from 'lucide-react';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
+import { useAlarmStore } from '@/store/alarmStore';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const { recordingState, startRecording, stopRecording } = useVoiceRecording();
+  const { recordingState, startRecording, stopRecording, resetRecording, createVoiceRecording } = useVoiceRecording();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [showAlarmDialog, setShowAlarmDialog] = useState(false);
+  const [alarmTime, setAlarmTime] = useState('');
+  const [alarmLabel, setAlarmLabel] = useState('');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const addAlarm = useAlarmStore((state) => state.addAlarm);
+  const { toast } = useToast();
 
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
+  };
+
+  const handleRecordClick = () => {
+    if (recordingState.isRecording) {
+      stopRecording();
+    } else if (recordingState.audioUrl) {
+      setShowAlarmDialog(true);
+    } else {
+      startRecording();
+    }
+  };
+
+  const handlePlayback = () => {
+    if (recordingState.audioUrl) {
+      const audio = new Audio(recordingState.audioUrl);
+      setIsPlaying(true);
+      
+      audio.onended = () => setIsPlaying(false);
+      audio.onerror = () => setIsPlaying(false);
+      
+      audio.play().catch(() => setIsPlaying(false));
+    }
+  };
+
+  const handleSaveAlarm = async () => {
+    if (!alarmTime || !alarmLabel || !recordingState.audioUrl) return;
+
+    const recording = await createVoiceRecording();
+    if (recording) {
+      addAlarm({
+        time: alarmTime,
+        date: selectedDate,
+        label: alarmLabel,
+        isEnabled: true,
+        voiceRecording: recording,
+        repeatDays: [],
+      });
+
+      toast({
+        title: "Alarm Created",
+        description: `Voice alarm set for ${alarmTime} on ${selectedDate.toDateString()}`,
+      });
+
+      setShowAlarmDialog(false);
+      setAlarmTime('');
+      setAlarmLabel('');
+      resetRecording();
+    }
+  };
+
+  const getRecordButtonText = () => {
+    if (recordingState.isRecording) return 'Recording...';
+    if (recordingState.audioUrl) return 'Create Alarm';
+    return 'Start Recording';
   };
 
   return (
@@ -134,7 +199,7 @@ const Index = () => {
                 <div className={cn(
                   "absolute inset-0 bg-card transition-all duration-300 ease-out",
                   "rounded-b-lg",
-                  recordingState.isRecording 
+                  recordingState.isRecording || recordingState.audioUrl
                     ? "record-indent" 
                     : ""
                 )}>
@@ -161,18 +226,96 @@ const Index = () => {
                 "border-4 border-white",
                 recordingState.isRecording 
                   ? "bg-red-500 hover:bg-red-600 animate-pulse scale-110 shadow-red-500/30" 
+                  : recordingState.audioUrl
+                  ? "bg-green-500 hover:bg-green-600 shadow-green-500/30 hover:scale-105"
                   : "bg-purple-500 hover:bg-purple-600 shadow-purple-500/30 hover:scale-105"
               )}
-              onClick={recordingState.isRecording ? stopRecording : startRecording}
+              onClick={handleRecordClick}
             >
-              <Mic className="h-7 w-7 text-white" />
+              {recordingState.isRecording ? (
+                <Square className="h-7 w-7 text-white" />
+              ) : recordingState.audioUrl ? (
+                <Check className="h-7 w-7 text-white" />
+              ) : (
+                <Mic className="h-7 w-7 text-white" />
+              )}
             </Button>
           </div>
         </div>
 
+        {/* Recording Controls */}
+        {recordingState.audioUrl && !recordingState.isRecording && (
+          <div className="mt-16 flex justify-center gap-3">
+            <Button
+              onClick={handlePlayback}
+              variant="outline"
+              disabled={isPlaying}
+              className="gap-2"
+            >
+              <Play className="h-4 w-4" />
+              {isPlaying ? 'Playing...' : 'Play'}
+            </Button>
+
+            <Button
+              onClick={resetRecording}
+              variant="outline"
+              className="gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Re-record
+            </Button>
+          </div>
+        )}
+
         {/* Extra spacing for record button */}
         <div className="h-12"></div>
       </div>
+
+      {/* Alarm Creation Dialog */}
+      <Dialog open={showAlarmDialog} onOpenChange={setShowAlarmDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Voice Alarm</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="time">Alarm Time</Label>
+              <Input
+                id="time"
+                type="time"
+                value={alarmTime}
+                onChange={(e) => setAlarmTime(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="label">Alarm Label</Label>
+              <Input
+                id="label"
+                placeholder="Enter alarm label"
+                value={alarmLabel}
+                onChange={(e) => setAlarmLabel(e.target.value)}
+              />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Date: {selectedDate.toDateString()}
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Recording Duration: {recordingState.duration.toFixed(1)}s
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowAlarmDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleSaveAlarm}
+                disabled={!alarmTime || !alarmLabel}
+              >
+                Create Alarm
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         .calendar-with-button {

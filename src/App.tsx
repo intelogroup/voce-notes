@@ -5,7 +5,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
-import Record from "./pages/Record";
 import CreateAlarm from "./pages/CreateAlarm";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
@@ -21,7 +20,6 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/record" element={<Record />} />
           <Route path="/create-alarm" element={<CreateAlarm />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/settings" element={<Settings />} />

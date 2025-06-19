@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Home, Plus, Settings, Mic, Bell } from 'lucide-react';
+import { Home, Settings, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link, useLocation } from 'react-router-dom';
 
@@ -11,7 +11,6 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { label: 'Record', icon: Mic, href: '/record' },
   { label: 'Alarms', icon: Home, href: '/' },
   { label: 'Notifications', icon: Bell, href: '/notifications' },
   { label: 'Settings', icon: Settings, href: '/settings' },
