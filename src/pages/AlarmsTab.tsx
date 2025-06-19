@@ -1,252 +1,187 @@
 
 import React, { useState } from 'react';
-import { useAlarmStore } from '@/store/alarmStore';
-import { GlassCard, GlassCardContent, GlassCardHeader, GlassCardTitle } from '@/components/ui/glass-card';
+import { EnhancedMobileNavigation } from '@/components/enhanced-mobile-navigation';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { ArrowLeft, Search, Clock, Calendar, Mic, Trash2, Edit, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { useAlarmStore } from '@/store/alarmStore';
+import { CleanCard, CleanCardContent, CleanCardHeader, CleanCardTitle } from '@/components/ui/clean-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Calendar, Mic, Play, Edit, Trash2, Plus, Search } from 'lucide-react';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 
 const AlarmsTab = () => {
-  const { alarms, toggleAlarm, deleteAlarm } = useAlarmStore();
   const [searchQuery, setSearchQuery] = useState('');
+  const { alarms, toggleAlarm, removeAlarm } = useAlarmStore();
 
-  const now = new Date();
   const today = new Date().toDateString();
-
   const todayAlarms = alarms.filter(alarm => 
     new Date(alarm.date).toDateString() === today
   );
-
   const upcomingAlarms = alarms.filter(alarm => 
-    new Date(alarm.date) > now
+    new Date(alarm.date) > new Date() && new Date(alarm.date).toDateString() !== today
   );
-
   const pastAlarms = alarms.filter(alarm => 
-    new Date(alarm.date) < now && new Date(alarm.date).toDateString() !== today
+    new Date(alarm.date) < new Date() && new Date(alarm.date).toDateString() !== today
   );
 
-  const filteredAlarms = (alarmList: typeof alarms) => 
-    alarmList.filter(alarm => 
+  const filteredAlarms = (alarmList: typeof alarms) => {
+    if (!searchQuery) return alarmList;
+    return alarmList.filter(alarm => 
       alarm.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
       alarm.time.includes(searchQuery)
     );
-
-  const formatTime = (time: string) => {
-    const [hours, minutes] = time.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour % 12 || 12;
-    return `${displayHour}:${minutes} ${ampm}`;
   };
 
-  const formatDate = (date: Date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  };
-
-  const getTimeUntilAlarm = (time: string, date: Date) => {
-    const [hours, minutes] = time.split(':');
-    const alarmTime = new Date(date);
-    alarmTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-    
-    const diff = alarmTime.getTime() - now.getTime();
-    const hours_diff = Math.floor(diff / (1000 * 60 * 60));
-    const minutes_diff = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    
-    if (hours_diff > 0) {
-      return `${hours_diff}h ${minutes_diff}m`;
-    }
-    return `${minutes_diff}m`;
-  };
-
-  const AlarmCard = ({ alarm, showCountdown = false }: { alarm: any, showCountdown?: boolean }) => (
-    <GlassCard variant="subtle" className="mb-3 hover:bg-white/10 transition-all duration-300">
-      <GlassCardContent className="p-4">
+  const AlarmCard = ({ alarm, showDate = false }: { alarm: any, showDate?: boolean }) => (
+    <CleanCard className="transition-all hover:shadow-md">
+      <CleanCardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-3 mb-2">
-              <div className="text-2xl font-bold text-white">
-                {formatTime(alarm.time)}
+              <div className="text-2xl font-bold">{alarm.time}</div>
+              <Badge variant={alarm.isEnabled ? "default" : "secondary"}>
+                {alarm.isEnabled ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+            <div className="text-sm text-muted-foreground mb-1">{alarm.label}</div>
+            {showDate && (
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <Calendar className="h-3 w-3" />
+                {new Date(alarm.date).toLocaleDateString()}
               </div>
-              {showCountdown && alarm.isEnabled && (
-                <Badge variant="secondary" className="bg-purple-500/20 text-purple-300">
-                  {getTimeUntilAlarm(alarm.time, alarm.date)}
-                </Badge>
-              )}
-              {!alarm.isEnabled && (
-                <Badge variant="outline" className="border-white/20 text-white/60">
-                  Disabled
-                </Badge>
-              )}
-            </div>
-            
-            <div className="flex items-center gap-2 text-sm text-white/70 mb-2">
-              <Calendar className="h-4 w-4" />
-              {formatDate(alarm.date)}
-            </div>
-            
-            {alarm.label && (
-              <p className="text-white/80 font-medium mb-2">{alarm.label}</p>
             )}
-            
             {alarm.voiceRecording && (
-              <div className="flex items-center gap-2 text-sm text-white/60">
-                <Mic className="h-4 w-4" />
-                Voice message ({alarm.voiceRecording.duration.toFixed(1)}s)
+              <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">
+                <Mic className="h-3 w-3" />
+                Voice recording attached
               </div>
             )}
           </div>
-          
           <div className="flex items-center gap-2">
             <Switch
               checked={alarm.isEnabled}
               onCheckedChange={() => toggleAlarm(alarm.id)}
             />
-            
-            <div className="flex gap-1">
-              {alarm.voiceRecording && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
-                >
-                  <Play className="h-4 w-4" />
-                </Button>
-              )}
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-white/60 hover:text-white hover:bg-white/10"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-              
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                onClick={() => deleteAlarm(alarm.id)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-8 w-8 text-destructive"
+              onClick={() => removeAlarm(alarm.id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
           </div>
         </div>
-      </GlassCardContent>
-    </GlassCard>
+      </CleanCardContent>
+    </CleanCard>
+  );
+
+  const EmptyState = ({ message }: { message: string }) => (
+    <div className="text-center py-8">
+      <Clock className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+      <p className="text-muted-foreground">{message}</p>
+    </div>
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -inset-10 opacity-20">
-          <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
-          <div className="absolute top-1/3 right-1/4 w-72 h-72 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-1/4 left-1/3 w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-6 pb-28 relative z-10">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Your Alarms</h1>
-            <p className="text-white/60">
-              {alarms.length} alarm{alarms.length !== 1 ? 's' : ''} configured
-            </p>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <nav className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border">
+        <div className="container flex h-16 items-center justify-between px-4">
+          <div className="flex items-center gap-4">
+            <Link to="/">
+              <Button variant="ghost" size="icon">
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+            </Link>
+            <h1 className="text-xl font-semibold">Alarms</h1>
           </div>
-          
-          <Button className="bg-gradient-to-r from-purple-500 to-blue-600 hover:from-purple-600 hover:to-blue-700">
-            <Plus className="h-4 w-4 mr-2" />
-            New Alarm
-          </Button>
+          <Link to="/create-alarm">
+            <Button size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              New
+            </Button>
+          </Link>
         </div>
+      </nav>
 
-        {/* Search Bar */}
-        <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-white/40" />
+      <EnhancedMobileNavigation />
+
+      <div className="container mx-auto px-4 py-6 pb-20 space-y-6">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search alarms..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/40 backdrop-blur-sm"
+            className="pl-10"
           />
         </div>
 
-        {/* Tabs */}
+        {/* Stats Overview */}
+        <div className="grid grid-cols-3 gap-4">
+          <CleanCard>
+            <CleanCardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-blue-600">{todayAlarms.length}</div>
+              <div className="text-sm text-muted-foreground">Today</div>
+            </CleanCardContent>
+          </CleanCard>
+          <CleanCard>
+            <CleanCardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-green-600">{upcomingAlarms.length}</div>
+              <div className="text-sm text-muted-foreground">Upcoming</div>
+            </CleanCardContent>
+          </CleanCard>
+          <CleanCard>
+            <CleanCardContent className="p-4 text-center">
+              <div className="text-2xl font-bold text-gray-600">{pastAlarms.length}</div>
+              <div className="text-sm text-muted-foreground">Past</div>
+            </CleanCardContent>
+          </CleanCard>
+        </div>
+
+        {/* Alarm Tabs */}
         <Tabs defaultValue="today" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-white/10 backdrop-blur-sm">
-            <TabsTrigger value="today" className="data-[state=active]:bg-white/20">
-              Today ({todayAlarms.length})
-            </TabsTrigger>
-            <TabsTrigger value="upcoming" className="data-[state=active]:bg-white/20">
-              Upcoming ({upcomingAlarms.length})
-            </TabsTrigger>
-            <TabsTrigger value="past" className="data-[state=active]:bg-white/20">
-              Past ({pastAlarms.length})
-            </TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="today">Today</TabsTrigger>
+            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+            <TabsTrigger value="past">Past</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="today" className="mt-6">
+          <TabsContent value="today" className="space-y-4 mt-6">
             {filteredAlarms(todayAlarms).length > 0 ? (
-              <div className="space-y-3">
-                {filteredAlarms(todayAlarms).map((alarm) => (
-                  <AlarmCard key={alarm.id} alarm={alarm} showCountdown={true} />
-                ))}
-              </div>
+              filteredAlarms(todayAlarms).map((alarm) => (
+                <AlarmCard key={alarm.id} alarm={alarm} />
+              ))
             ) : (
-              <GlassCard variant="subtle" className="text-center py-12">
-                <GlassCardContent>
-                  <Clock className="h-16 w-16 mx-auto text-white/40 mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">No alarms today</h3>
-                  <p className="text-white/60">Create an alarm to get started</p>
-                </GlassCardContent>
-              </GlassCard>
+              <EmptyState message="No alarms for today" />
             )}
           </TabsContent>
 
-          <TabsContent value="upcoming" className="mt-6">
+          <TabsContent value="upcoming" className="space-y-4 mt-6">
             {filteredAlarms(upcomingAlarms).length > 0 ? (
-              <div className="space-y-3">
-                {filteredAlarms(upcomingAlarms).map((alarm) => (
-                  <AlarmCard key={alarm.id} alarm={alarm} />
-                ))}
-              </div>
+              filteredAlarms(upcomingAlarms).map((alarm) => (
+                <AlarmCard key={alarm.id} alarm={alarm} showDate />
+              ))
             ) : (
-              <GlassCard variant="subtle" className="text-center py-12">
-                <GlassCardContent>
-                  <Calendar className="h-16 w-16 mx-auto text-white/40 mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">No upcoming alarms</h3>
-                  <p className="text-white/60">Schedule future alarms here</p>
-                </GlassCardContent>
-              </GlassCard>
+              <EmptyState message="No upcoming alarms" />
             )}
           </TabsContent>
 
-          <TabsContent value="past" className="mt-6">
+          <TabsContent value="past" className="space-y-4 mt-6">
             {filteredAlarms(pastAlarms).length > 0 ? (
-              <div className="space-y-3">
-                {filteredAlarms(pastAlarms).map((alarm) => (
-                  <AlarmCard key={alarm.id} alarm={alarm} />
-                ))}
-              </div>
+              filteredAlarms(pastAlarms).map((alarm) => (
+                <AlarmCard key={alarm.id} alarm={alarm} showDate />
+              ))
             ) : (
-              <GlassCard variant="subtle" className="text-center py-12">
-                <GlassCardContent>
-                  <Clock className="h-16 w-16 mx-auto text-white/40 mb-4" />
-                  <h3 className="text-xl font-semibold text-white mb-2">No past alarms</h3>
-                  <p className="text-white/60">Your alarm history will appear here</p>
-                </GlassCardContent>
-              </GlassCard>
+              <EmptyState message="No past alarms" />
             )}
           </TabsContent>
         </Tabs>
