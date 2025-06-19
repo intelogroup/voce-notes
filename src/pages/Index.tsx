@@ -96,9 +96,6 @@ const Index = () => {
                   Ready to set your voice alarms?
                 </p>
               </div>
-              <div className="flex items-center">
-                <Bell className="h-5 w-5 text-muted-foreground" />
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -177,7 +174,7 @@ const Index = () => {
         <div className="h-12"></div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .calendar-with-button {
           position: relative;
           overflow: visible;
