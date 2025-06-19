@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import CreateAlarm from "./pages/CreateAlarm";
 import Settings from "./pages/Settings";
 import Notifications from "./pages/Notifications";
+import AlarmsTab from "./pages/AlarmsTab";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -20,6 +21,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/alarms" element={<AlarmsTab />} />
           <Route path="/create-alarm" element={<CreateAlarm />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/settings" element={<Settings />} />
