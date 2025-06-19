@@ -83,84 +83,140 @@ const Index = () => {
 
       <MobileNavigation />
       
-      <div className="container mx-auto px-4 py-6 pb-24 max-h-screen overflow-y-auto">
-        {/* Greeting Card */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
+      <div className="container mx-auto px-4 py-4 pb-24 max-h-screen overflow-y-auto">
+        {/* Compact Greeting Card */}
+        <Card className="mb-3">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-2xl font-bold text-foreground mb-2">
+                <h2 className="text-xl font-bold text-foreground mb-1">
                   {getGreeting()}
                 </h2>
-                <p className="text-muted-foreground">
+                <p className="text-sm text-muted-foreground">
                   Ready to set your voice alarms?
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <Bell className="h-6 w-6 text-muted-foreground" />
-                <div className="h-12 w-12 rounded-full bg-purple-500 flex items-center justify-center">
-                  <div className="h-8 w-8 rounded-full bg-purple-400"></div>
-                </div>
+              <div className="flex items-center">
+                <Bell className="h-5 w-5 text-muted-foreground" />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Compact Calendar */}
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
-              className="w-full"
-              classNames={{
-                months: "flex w-full flex-col space-y-2",
-                month: "space-y-2 w-full flex flex-col",
-                caption: "flex justify-center pt-1 relative items-center",
-                caption_label: "text-base font-medium",
-                table: "w-full border-collapse space-y-1",
-                head_row: "flex w-full",
-                head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs flex-1 text-center",
-                row: "flex w-full mt-1",
-                cell: "h-8 w-full text-center text-xs p-0 relative flex-1",
-                day: cn(
-                  "h-8 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground text-xs"
-                ),
-                day_selected: "bg-purple-500 text-white hover:bg-purple-600 hover:text-white focus:bg-purple-600 focus:text-white",
-                day_today: "bg-accent text-accent-foreground",
-                day_outside: "day-outside text-muted-foreground opacity-50",
-                day_disabled: "text-muted-foreground opacity-50",
-              }}
-            />
-          </CardContent>
-        </Card>
+        {/* Calendar with Record Button Integration */}
+        <div className="relative">
+          <Card className="calendar-with-button mb-0 relative">
+            <CardContent className="p-2">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={(date) => date && setSelectedDate(date)}
+                className="w-full"
+                classNames={{
+                  months: "flex w-full flex-col space-y-2",
+                  month: "space-y-2 w-full flex flex-col",
+                  caption: "flex justify-center pt-1 relative items-center",
+                  caption_label: "text-base font-medium",
+                  table: "w-full border-collapse space-y-1",
+                  head_row: "flex w-full",
+                  head_cell: "text-muted-foreground rounded-md w-full font-normal text-xs flex-1 text-center",
+                  row: "flex w-full mt-1",
+                  cell: "h-8 w-full text-center text-xs p-0 relative flex-1",
+                  day: cn(
+                    "h-8 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground text-xs"
+                  ),
+                  day_selected: "bg-purple-500 text-white hover:bg-purple-600 hover:text-white focus:bg-purple-600 focus:text-white",
+                  day_today: "bg-accent text-accent-foreground",
+                  day_outside: "day-outside text-muted-foreground opacity-50",
+                  day_disabled: "text-muted-foreground opacity-50",
+                }}
+              />
+              
+              {/* Deformation effect for calendar bottom */}
+              <div className="calendar-bottom-deform h-8 relative">
+                <div className={cn(
+                  "absolute inset-0 bg-card transition-all duration-300 ease-out",
+                  "rounded-b-lg",
+                  recordingState.isRecording 
+                    ? "record-indent" 
+                    : ""
+                )}>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Recording Timer */}
-        {recordingState.isRecording && (
-          <div className="fixed bottom-56 left-1/2 transform -translate-x-1/2 z-50">
-            <div className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium">
-              {recordingState.duration.toFixed(1)}s
+          {/* Recording Timer */}
+          {recordingState.isRecording && (
+            <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 z-40">
+              <div className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-medium shadow-lg">
+                {recordingState.duration.toFixed(1)}s
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Floating Record Button */}
-        <div className="fixed bottom-32 left-1/2 transform -translate-x-1/2 z-50">
-          <Button
-            size="icon"
-            className={cn(
-              "h-20 w-20 rounded-full shadow-lg transition-all duration-200",
-              recordingState.isRecording 
-                ? "bg-red-500 hover:bg-red-600 animate-pulse" 
-                : "bg-purple-500 hover:bg-purple-600"
-            )}
-            onClick={recordingState.isRecording ? stopRecording : startRecording}
-          >
-            <Mic className="h-8 w-8 text-white" />
-          </Button>
+          {/* Floating Record Button - Positioned to create deformation */}
+          <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+            <Button
+              size="icon"
+              className={cn(
+                "h-16 w-16 rounded-full shadow-xl transition-all duration-300 ease-out",
+                "border-4 border-white",
+                recordingState.isRecording 
+                  ? "bg-red-500 hover:bg-red-600 animate-pulse scale-110 shadow-red-500/30" 
+                  : "bg-purple-500 hover:bg-purple-600 shadow-purple-500/30 hover:scale-105"
+              )}
+              onClick={recordingState.isRecording ? stopRecording : startRecording}
+            >
+              <Mic className="h-7 w-7 text-white" />
+            </Button>
+          </div>
         </div>
+
+        {/* Extra spacing for record button */}
+        <div className="h-12"></div>
       </div>
+
+      <style jsx>{`
+        .calendar-with-button {
+          position: relative;
+          overflow: visible;
+        }
+        
+        .calendar-bottom-deform {
+          background: hsl(var(--card));
+          border-left: 1px solid hsl(var(--border));
+          border-right: 1px solid hsl(var(--border));
+          border-bottom: 1px solid hsl(var(--border));
+        }
+        
+        .record-indent {
+          clip-path: polygon(
+            0% 0%, 
+            35% 0%, 
+            40% 50%, 
+            50% 80%, 
+            60% 50%, 
+            65% 0%, 
+            100% 0%, 
+            100% 100%, 
+            0% 100%
+          );
+          background: linear-gradient(
+            180deg, 
+            hsl(var(--card)) 0%, 
+            hsl(var(--muted)) 100%
+          );
+        }
+        
+        .calendar-with-button:hover .calendar-bottom-deform {
+          background: linear-gradient(
+            180deg, 
+            hsl(var(--card)) 0%, 
+            hsl(var(--accent)) 100%
+          );
+        }
+      `}</style>
     </div>
   );
 };
