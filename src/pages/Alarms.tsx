@@ -1,14 +1,16 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Clock, Calendar, Mic, Play, Trash2 } from 'lucide-react';
+import { Plus, Clock, Calendar, Mic, Play, Trash2, Bell } from 'lucide-react';
 import { useAlarmStore } from '@/store/alarmStore';
 import { Link } from 'react-router-dom';
+import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const Alarms = () => {
   const { alarms, toggleAlarm, deleteAlarm } = useAlarmStore();
+  const [activeTab, setActiveTab] = useState('today');
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':');
@@ -31,109 +33,94 @@ const Alarms = () => {
     audio.play().catch(console.error);
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-purple-50 pb-20">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">
-              Your Alarms
-            </h1>
-            <p className="text-muted-foreground">
-              {alarms.length} alarm{alarms.length !== 1 ? 's' : ''} configured
-            </p>
-          </div>
-          
-          <Link to="/create-alarm">
-            <Button size="lg" className="gap-2">
-              <Plus className="h-5 w-5" />
-              Add Alarm
-            </Button>
-          </Link>
-        </div>
+  const today = new Date();
+  const todayAlarms = alarms.filter(a => new Date(a.date).toDateString() === today.toDateString());
+  const upcomingAlarms = alarms.filter(a => new Date(a.date) > today);
+  const pastAlarms = alarms.filter(a => new Date(a.date) < today && new Date(a.date).toDateString() !== today.toDateString());
 
-        {alarms.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <Clock className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No alarms yet</h3>
-              <p className="text-muted-foreground mb-6">
-                Create your first voice alarm to get started
-              </p>
-              <Link to="/create-alarm">
-                <Button size="lg" className="gap-2">
-                  <Plus className="h-5 w-5" />
-                  Create First Alarm
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {alarms.map((alarm) => (
-              <Card key={alarm.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-5 w-5 text-primary" />
-                      <CardTitle className="text-2xl font-bold">
-                        {formatTime(alarm.time)}
-                      </CardTitle>
-                    </div>
-                    <Switch
-                      checked={alarm.isEnabled}
-                      onCheckedChange={() => toggleAlarm(alarm.id)}
-                    />
-                  </div>
-                </CardHeader>
-                
-                <CardContent className="pt-0">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                        <Calendar className="h-4 w-4" />
-                        {formatDate(alarm.date)}
-                      </div>
-                      
-                      {alarm.label && (
-                        <p className="text-sm font-medium mb-2">{alarm.label}</p>
-                      )}
-                      
-                      {alarm.voiceRecording && (
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Mic className="h-4 w-4" />
-                          Voice message ({alarm.voiceRecording.duration.toFixed(1)}s)
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      {alarm.voiceRecording && (
-                        <Button
-                          variant="outline"
-                          size="icon"
-                          onClick={() => playVoiceMessage(alarm.voiceRecording!.audioBlob)}
-                        >
-                          <Play className="h-4 w-4" />
-                        </Button>
-                      )}
-                      
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => deleteAlarm(alarm.id)}
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+  const AlarmCard = ({ alarm }: { alarm: typeof alarms[0] }) => (
+    <Card className="hover:shadow-lg transition-shadow">
+      <CardContent className="p-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Clock className="h-6 w-6 text-primary" />
+          <div>
+            <p className="text-xl font-bold">{formatTime(alarm.time)}</p>
+            <p className="text-sm text-muted-foreground">{alarm.label || 'Alarm'}</p>
           </div>
-        )}
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="text-right">
+            <p className="text-sm font-medium">{formatDate(alarm.date)}</p>
+            {alarm.voiceRecording && (
+              <div className="flex items-center justify-end gap-1 text-xs text-muted-foreground">
+                <Mic className="h-3 w-3" />
+                <span>{alarm.voiceRecording.duration.toFixed(1)}s</span>
+              </div>
+            )}
+          </div>
+          <Switch
+            checked={alarm.isEnabled}
+            onCheckedChange={() => toggleAlarm(alarm.id)}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const EmptyState = ({ message, description }: { message: string, description: string }) => (
+    <div className="flex flex-col items-center justify-center h-[50vh] text-center">
+      <Bell className="h-16 w-16 text-muted-foreground mb-4" />
+      <h2 className="text-2xl font-semibold mb-2">{message}</h2>
+      <p className="text-muted-foreground mb-6">{description}</p>
+      <Button asChild>
+        <Link to="/#record">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Alarm
+        </Link>
+      </Button>
+    </div>
+  );
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-3 gap-4">
+        {/* Stats cards */}
       </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="today">Today</TabsTrigger>
+          <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+          <TabsTrigger value="past">Past</TabsTrigger>
+        </TabsList>
+        <TabsContent value="today">
+          {todayAlarms.length > 0 ? (
+            <div className="space-y-4 mt-4">
+              {todayAlarms.map(alarm => <AlarmCard key={alarm.id} alarm={alarm} />)}
+            </div>
+          ) : (
+            <EmptyState message="No Alarms for Today" description="Create a new alarm to get started." />
+          )}
+        </TabsContent>
+        <TabsContent value="upcoming">
+          {upcomingAlarms.length > 0 ? (
+            <div className="space-y-4 mt-4">
+              {upcomingAlarms.map(alarm => <AlarmCard key={alarm.id} alarm={alarm} />)}
+            </div>
+          ) : (
+            <EmptyState message="No Upcoming Alarms" description="You're all caught up for the future!" />
+          )}
+        </TabsContent>
+        <TabsContent value="past">
+          {pastAlarms.length > 0 ? (
+            <div className="space-y-4 mt-4">
+              {pastAlarms.map(alarm => <AlarmCard key={alarm.id} alarm={alarm} />)}
+            </div>
+          ) : (
+            <EmptyState message="No Past Alarms" description="Your history of alarms will appear here." />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

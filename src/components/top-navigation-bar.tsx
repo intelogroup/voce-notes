@@ -39,6 +39,11 @@ export const TopNavigationBar: React.FC<TopNavigationBarProps> = ({ title }) => 
 
         <div className="flex items-center space-x-2">
           <ThemeToggle />
+          <Link to="/notifications">
+            <Button variant="ghost" size="icon">
+              <Bell className="h-5 w-5" />
+            </Button>
+          </Link>
           <Sheet open={isProfileOpen} onOpenChange={setIsProfileOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">

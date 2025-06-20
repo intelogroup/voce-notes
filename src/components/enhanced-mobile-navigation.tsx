@@ -11,7 +11,6 @@ const navItems = [
   { href: "/alarms", label: "Alarms", icon: Clock },
   { href: "/notes", label: "Notes", icon: FileText },
   { href: "/chat", label: "Chat", icon: MessageSquare },
-  { href: "/notifications", label: "Notifications", icon: Bell },
 ];
 
 export function EnhancedMobileNavigation() {

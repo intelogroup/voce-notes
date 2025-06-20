@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { Clock, Calendar as CalendarIcon, Save, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAlarmStore } from '@/store/alarmStore';
 import { useToast } from '@/hooks/use-toast';
+import { ClockTimePicker } from './clock-time-picker';
 
 interface CalendarRecordingModalProps {
   isOpen: boolean;
@@ -21,7 +21,7 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
   onClose,
   selectedDate
 }) => {
-  const [alarmTime, setAlarmTime] = useState('');
+  const [time, setTime] = useState({ hour: 12, minute: 0 });
   const [alarmLabel, setAlarmLabel] = useState('');
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const { addAlarm } = useAlarmStore();
@@ -32,10 +32,10 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
   };
 
   const handleSave = () => {
-    if (!alarmTime || !recordingBlob) {
+    if (!recordingBlob) {
       toast({
         title: "Missing Information",
-        description: "Please set a time and record a message",
+        description: "Please record a message",
         variant: "destructive",
       });
       return;
@@ -44,8 +44,7 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
     // Check if the time is in the past for today
     const now = new Date();
     const selectedDateTime = new Date(selectedDate);
-    const [hours, minutes] = alarmTime.split(':').map(Number);
-    selectedDateTime.setHours(hours, minutes, 0, 0);
+    selectedDateTime.setHours(time.hour, time.minute, 0, 0);
 
     if (selectedDateTime <= now) {
       toast({
@@ -63,6 +62,8 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
       duration: 0, // Will be calculated when needed
       createdAt: new Date(),
     };
+
+    const alarmTime = `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
 
     addAlarm({
       time: alarmTime,
@@ -82,7 +83,7 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
   };
 
   const handleClose = () => {
-    setAlarmTime('');
+    setTime({ hour: 12, minute: 0 });
     setAlarmLabel('');
     setRecordingBlob(null);
     onClose();
@@ -90,7 +91,7 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto no-scrollbar">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5" />
@@ -105,13 +106,9 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
               <Clock className="h-4 w-4" />
               Alarm Time
             </Label>
-            <Input
-              id="time"
-              type="time"
-              value={alarmTime}
-              onChange={(e) => setAlarmTime(e.target.value)}
-              className="h-12 text-center text-lg"
-            />
+            <div className="flex justify-center">
+              <ClockTimePicker onTimeChange={setTime} isOpen={isOpen} />
+            </div>
           </div>
 
           {/* Label Input */}
@@ -140,7 +137,7 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
             <Button 
               onClick={handleSave} 
               className="flex-1"
-              disabled={!alarmTime || !recordingBlob}
+              disabled={!recordingBlob}
             >
               <Save className="h-4 w-4 mr-2" />
               Save Alarm
