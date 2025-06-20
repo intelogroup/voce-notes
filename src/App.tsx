@@ -1,3 +1,4 @@
+
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Index from './pages/Index';
 import Alarms from './pages/Alarms';
@@ -12,7 +13,7 @@ import { Toaster } from './components/ui/toaster';
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
       <Router>
         <Routes>
           <Route element={<MainLayout />}>
