@@ -1,10 +1,10 @@
-
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { CleanCard, CleanCardContent } from '@/components/ui/clean-card';
 import { Progress } from '@/components/ui/progress';
-import { Mic, Square, Play, Pause, RotateCcw, Download } from 'lucide-react';
+import { Mic, Square, Play, Pause, RotateCcw, Download, Timer, MessageSquare, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 interface SimpleAudioRecorderProps {
   onRecordingComplete?: (audioBlob: Blob) => void;
@@ -20,6 +20,7 @@ export const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackProgress, setPlaybackProgress] = useState(0);
+  const [isRecordTypeModalOpen, setIsRecordTypeModalOpen] = useState(false);
   
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -70,6 +71,18 @@ export const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+    }
+  };
+
+  const handleRecordTypeSelect = (type: 'voice' | 'ai') => {
+    setIsRecordTypeModalOpen(false);
+    // Handle the recording type selection
+    if (type === 'voice') {
+      // Start voice note recording
+      console.log('Starting voice note recording');
+    } else {
+      // Start AI chat recording
+      console.log('Starting AI chat recording');
     }
   };
 
@@ -128,108 +141,149 @@ export const SimpleAudioRecorder: React.FC<SimpleAudioRecorderProps> = ({
   };
 
   return (
-    <CleanCard className={cn('w-full', className)}>
-      <CleanCardContent className="p-6">
-        <div className="space-y-4">
-          {/* Status Display */}
-          <div className="text-center">
-            {isRecording ? (
-              <div className="space-y-3">
-                <div className="flex items-center justify-center gap-2">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-                  <span className="text-sm font-medium text-red-600">Recording</span>
+    <>
+      <CleanCard className={cn('w-full', className)}>
+        <CleanCardContent className="p-6">
+          <div className="space-y-4">
+            {/* Status Display */}
+            <div className="text-center">
+              {isRecording ? (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-sm font-medium text-red-600">Recording</span>
+                  </div>
+                  <div className="text-2xl font-bold text-foreground">
+                    {formatDuration(duration)}
+                  </div>
                 </div>
-                <div className="text-2xl font-bold text-foreground">
-                  {formatDuration(duration)}
-                </div>
-              </div>
-            ) : audioUrl ? (
-              <div className="space-y-3">
-                <div className="text-lg font-medium text-foreground">
-                  Recording Complete
-                </div>
-                <div className="text-sm text-muted-foreground">
-                  Duration: {formatDuration(duration)}
-                </div>
-                {isPlaying && (
-                  <Progress 
-                    value={playbackProgress} 
-                    className="w-full h-1"
-                  />
-                )}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <Mic className="w-8 h-8 mx-auto text-muted-foreground" />
-                <div className="text-lg font-medium text-foreground">
-                  Ready to Record
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Controls */}
-          <div className="flex justify-center gap-2">
-            {!isRecording && !audioUrl && (
-              <Button
-                onClick={startRecording}
-                size="lg"
-                className="h-12 px-6"
-              >
-                <Mic className="w-4 h-4 mr-2" />
-                Record
-              </Button>
-            )}
-
-            {isRecording && (
-              <Button
-                onClick={stopRecording}
-                variant="destructive"
-                size="lg"
-                className="h-12 px-6"
-              >
-                <Square className="w-4 h-4 mr-2" />
-                Stop
-              </Button>
-            )}
-
-            {audioUrl && (
-              <>
-                <Button
-                  onClick={handlePlayback}
-                  variant="outline"
-                  size="lg"
-                  className="h-12 px-4"
-                >
-                  {isPlaying ? (
-                    <Pause className="w-4 h-4" />
-                  ) : (
-                    <Play className="w-4 h-4" />
+              ) : audioUrl ? (
+                <div className="space-y-3">
+                  <div className="text-lg font-medium text-foreground">
+                    Recording Complete
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Duration: {formatDuration(duration)}
+                  </div>
+                  {isPlaying && (
+                    <Progress 
+                      value={playbackProgress} 
+                      className="w-full h-1"
+                    />
                   )}
-                </Button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <Mic className="w-8 h-8 mx-auto text-muted-foreground" />
+                  <div className="text-lg font-medium text-foreground">
+                    Ready to Record
+                  </div>
+                </div>
+              )}
+            </div>
 
-                <Button
-                  onClick={resetRecording}
-                  variant="outline"
-                  size="lg"
-                  className="h-12 px-4"
-                >
-                  <RotateCcw className="w-4 h-4" />
-                </Button>
+            {/* Controls */}
+            <div className="flex justify-center gap-4">
+              {!isRecording && !audioUrl && (
+                <>
+                  <Button
+                    onClick={startRecording}
+                    size="lg"
+                    className="h-20 flex-1 flex-col"
+                  >
+                    <Timer className="w-6 h-6 mb-1" />
+                    <span>Alarm (30s)</span>
+                  </Button>
+                  <Button
+                    onClick={() => setIsRecordTypeModalOpen(true)}
+                    size="lg"
+                    variant="outline"
+                    className="h-20 flex-1 flex-col"
+                  >
+                    <MessageSquare className="w-6 h-6 mb-1" />
+                    <span>Note / Chat</span>
+                  </Button>
+                </>
+              )}
 
+              {isRecording && (
                 <Button
-                  onClick={downloadRecording}
-                  variant="outline"
+                  onClick={stopRecording}
+                  variant="destructive"
                   size="lg"
-                  className="h-12 px-4"
+                  className="h-12 px-6"
                 >
-                  <Download className="w-4 h-4" />
+                  <Square className="w-4 h-4 mr-2" />
+                  Stop
                 </Button>
-              </>
-            )}
+              )}
+
+              {audioUrl && (
+                <>
+                  <Button
+                    onClick={handlePlayback}
+                    variant="outline"
+                    size="lg"
+                    className="h-12 px-4"
+                  >
+                    {isPlaying ? (
+                      <Pause className="w-4 h-4" />
+                    ) : (
+                      <Play className="w-4 h-4" />
+                    )}
+                  </Button>
+
+                  <Button
+                    onClick={resetRecording}
+                    variant="destructive"
+                    size="lg"
+                    className="h-12 px-4"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+
+                  <Button
+                    onClick={downloadRecording}
+                    variant="outline"
+                    size="lg"
+                    className="h-12 px-4"
+                  >
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-        </div>
-      </CleanCardContent>
-    </CleanCard>
+        </CleanCardContent>
+      </CleanCard>
+      <Dialog open={isRecordTypeModalOpen} onOpenChange={setIsRecordTypeModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Choose Recording Type</DialogTitle>
+            <DialogDescription>
+              Select the type of recording you want to create
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 p-4">
+            <Button
+              className="h-32 flex flex-col items-center justify-center gap-2"
+              variant="outline"
+              onClick={() => handleRecordTypeSelect('voice')}
+            >
+              <Mic className="h-8 w-8" />
+              <span>Voice Note</span>
+            </Button>
+            <Button
+              className="h-32 flex flex-col items-center justify-center gap-2"
+              variant="outline"
+              onClick={() => handleRecordTypeSelect('ai')}
+            >
+              <MessageSquare className="h-8 w-8" />
+              <span>AI Chat</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

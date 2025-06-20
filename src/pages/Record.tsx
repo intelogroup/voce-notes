@@ -1,21 +1,34 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
-import { Mic, Bell } from 'lucide-react';
+import { Mic, Bell, MessageSquare, Timer } from 'lucide-react';
 import { useVoiceRecording } from '@/hooks/useVoiceRecording';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 const Record = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const { recordingState, startRecording, stopRecording } = useVoiceRecording();
+  const [isRecordTypeModalOpen, setIsRecordTypeModalOpen] = useState(false);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return 'Good morning';
     if (hour < 18) return 'Good afternoon';
     return 'Good evening';
+  };
+
+  const handleRecordTypeSelect = (type: 'voice' | 'ai') => {
+    setIsRecordTypeModalOpen(false);
+    // Handle the recording type selection
+    if (type === 'voice') {
+      // Start voice note recording
+      console.log('Starting voice note recording');
+    } else {
+      // Start AI chat recording
+      console.log('Starting AI chat recording');
+    }
   };
 
   return (
@@ -80,8 +93,9 @@ const Record = () => {
           </CardContent>
         </Card>
 
-        {/* Floating Record Button */}
-        <div className="fixed bottom-32 left-1/2 transform -translate-x-1/2">
+        {/* Floating Record Buttons */}
+        <div className="fixed bottom-48 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-4 z-10">
+          {/* Alarm Record Button (30s) */}
           <Button
             size="icon"
             className={cn(
@@ -92,7 +106,19 @@ const Record = () => {
             )}
             onClick={recordingState.isRecording ? stopRecording : startRecording}
           >
-            <Mic className="h-8 w-8 text-white" />
+            <div className="flex flex-col items-center">
+              <Timer className="h-8 w-8 text-white mb-1" />
+              <span className="text-xs text-white">30s</span>
+            </div>
+          </Button>
+
+          {/* Voice Note/AI Chat Button */}
+          <Button
+            size="icon"
+            className="h-16 w-16 rounded-full shadow-lg bg-blue-500 hover:bg-blue-600"
+            onClick={() => setIsRecordTypeModalOpen(true)}
+          >
+            <MessageSquare className="h-6 w-6 text-white" />
           </Button>
         </div>
 
@@ -104,6 +130,36 @@ const Record = () => {
             </div>
           </div>
         )}
+
+        {/* Record Type Modal */}
+        <Dialog open={isRecordTypeModalOpen} onOpenChange={setIsRecordTypeModalOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Choose Recording Type</DialogTitle>
+              <DialogDescription>
+                Select the type of recording you want to create
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4 p-4">
+              <Button
+                className="h-32 flex flex-col items-center justify-center gap-2"
+                variant="outline"
+                onClick={() => handleRecordTypeSelect('voice')}
+              >
+                <Mic className="h-8 w-8" />
+                <span>Voice Note</span>
+              </Button>
+              <Button
+                className="h-32 flex flex-col items-center justify-center gap-2"
+                variant="outline"
+                onClick={() => handleRecordTypeSelect('ai')}
+              >
+                <MessageSquare className="h-8 w-8" />
+                <span>AI Chat</span>
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
