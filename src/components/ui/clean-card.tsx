@@ -1,18 +1,20 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
-interface CleanCardProps {
+interface CleanCardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
   variant?: 'default' | 'outline' | 'ghost';
+  borderClassName?: string;
 }
 
 export const CleanCard: React.FC<CleanCardProps> = ({ 
   children, 
   className, 
-  variant = 'default'
+  variant = 'default',
+  borderClassName,
+  ...props 
 }) => {
   const variants = {
     default: 'bg-card border border-border',
@@ -21,11 +23,15 @@ export const CleanCard: React.FC<CleanCardProps> = ({
   };
 
   return (
-    <Card className={cn(
-      variants[variant],
-      'transition-colors',
-      className
-    )}>
+    <Card 
+      className={cn(
+        variants[variant],
+        'transition-colors',
+        borderClassName,
+        className
+      )}
+      {...props}
+    >
       {children}
     </Card>
   );

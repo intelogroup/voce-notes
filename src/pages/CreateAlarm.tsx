@@ -1,148 +1,171 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, Calendar as CalendarIcon, Clock, Mic, Save } from 'lucide-react';
+import { ArrowLeft, Calendar as CalendarIcon, Clock, Mic, Save, Trash2 } from 'lucide-react';
 import { useAlarmStore } from '@/store/alarmStore';
 import { VoiceRecorder } from '@/components/VoiceRecorder';
 import { Link, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
+import { ClockTimePicker } from '@/components/ui/clock-time-picker';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { useNotifications } from '@/hooks/use-notifications';
+import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
-const CreateAlarm = () => {
+interface CreateAlarmProps {
+    isOpen: boolean;
+    onClose: () => void;
+    initialTime?: string;
+    initialLabel?: string;
+}
+
+export const CreateAlarm = ({ isOpen, onClose, initialTime, initialLabel }: CreateAlarmProps) => {
   const navigate = useNavigate();
-  const { addAlarm } = useAlarmStore();
+  const { addAlarm, pendingAlarmAudio, setPendingAlarmAudio } = useAlarmStore();
+  const { scheduleNotification } = useNotifications();
+  const { toast } = useToast();
   
-  const [time, setTime] = useState('07:00');
-  const [date, setDate] = useState<Date>(new Date());
-  const [label, setLabel] = useState('');
-  const [voiceRecording, setVoiceRecording] = useState(null);
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  
+  const [time, setTime] = useState<{ hour: number, minute: number }>(() => {
+    if (initialTime) {
+      const [hour, minute] = initialTime.split(':').map(Number);
+      return { hour, minute };
+    }
+    const now = new Date();
+    return { hour: now.getHours(), minute: now.getMinutes() };
+  });
 
-  const handleSaveAlarm = () => {
-    addAlarm({
-      time,
-      date,
-      label: label || 'Wake up',
-      isEnabled: true,
-      voiceRecording,
-      repeatDays: [],
-    });
+  const [label, setLabel] = useState(initialLabel || 'My Alarm');
+  const [voiceRecording, setVoiceRecording] = useState(null);
+  const [repeatDays, setRepeatDays] = useState<string[]>([]);
+  const [severity, setSeverity] = useState<'low' | 'medium' | 'high'>('medium');
+
+  useEffect(() => {
+    if (initialTime) {
+        const [hour, minute] = initialTime.split(':').map(Number);
+        setTime({ hour, minute });
+    }
+    if (initialLabel) {
+        setLabel(initialLabel);
+    }
+    // Clear pending audio when modal is closed without saving
+    return () => {
+        if (isOpen) {
+            setPendingAlarmAudio(null);
+        }
+    }
+  }, [initialTime, initialLabel, isOpen, setPendingAlarmAudio]);
+
+  const isPastTime = isToday(date || new Date());
+
+  const handleSave = () => {
+    if (!date) {
+        toast({ title: "Error", description: "Please select a date.", variant: "destructive" });
+        return;
+    }
     
-    navigate('/');
+    const newAlarm = {
+        id: Date.now().toString(),
+        time: `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`,
+        date,
+        label,
+        isEnabled: true,
+        voiceRecording: pendingAlarmAudio ? {
+            id: Date.now().toString(),
+            audioBlob: pendingAlarmAudio.blob,
+            duration: pendingAlarmAudio.duration,
+            createdAt: new Date(),
+        } : undefined,
+        repeatDays,
+        severity,
+        createdAt: new Date(),
+    };
+
+    addAlarm(newAlarm);
+    toast({ title: "Success", description: `Alarm "${label}" set for ${newAlarm.time}.` });
+    // Clear the pending audio after successful save
+    setPendingAlarmAudio(null);
+    onClose();
   };
 
+  const dayOptions = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-background to-purple-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center gap-4 mb-8">
-          <Link to="/">
-            <Button variant="outline" size="icon">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
-          <h1 className="text-3xl font-bold">Create Alarm</h1>
-        </div>
-
-        <div className="max-w-2xl mx-auto space-y-6">
-          {/* Time Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Time
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
-                className="text-2xl font-bold h-16 text-center"
-              />
-            </CardContent>
-          </Card>
-
-          {/* Date Selection */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5" />
-                Date
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal h-12",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "PPP") : <span>Pick a date</span>}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="w-full h-full max-w-none sm:max-w-lg rounded-none sm:rounded-lg flex flex-col p-0">
+        <DialogHeader className="p-6 pb-4">
+          <DialogTitle>Create New Alarm</DialogTitle>
+        </DialogHeader>
+        <div className="flex-1 overflow-y-auto px-6 space-y-4">
+            {pendingAlarmAudio && (
+                <div className="bg-muted p-3 rounded-lg flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Mic className="h-5 w-5 text-primary" />
+                        <span className="text-sm font-medium">
+                            Voice message attached ({pendingAlarmAudio.duration.toFixed(1)}s)
+                        </span>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setPendingAlarmAudio(null)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                </div>
+            )}
+            <div>
+                <Label htmlFor="label">Label</Label>
+                <Input id="label" value={label} onChange={(e) => setLabel(e.target.value)} />
+            </div>
+            
+            <div>
+                <Label>Date</Label>
+                <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={(newDate) => newDate && setDate(newDate)}
-                    initialFocus
-                    disabled={(date) => date < new Date()}
-                    className="pointer-events-auto"
-                  />
-                </PopoverContent>
-              </Popover>
-            </CardContent>
-          </Card>
+                    onSelect={setDate}
+                    className="rounded-md border"
+                />
+            </div>
+            <div>
+                <Label>Time</Label>
+                <ClockTimePicker 
+                    onTimeChange={setTime}
+                    initialTime={time}
+                />
+            </div>
+            
+            <div>
+                <Label>Repeat</Label>
+                <ToggleGroup type="multiple" value={repeatDays} onValueChange={setRepeatDays} className="flex-wrap justify-start">
+                    {dayOptions.map(day => (
+                        <ToggleGroupItem key={day} value={day} className="capitalize text-xs h-8">
+                            {day.substring(0, 3)}
+                        </ToggleGroupItem>
+                    ))}
+                </ToggleGroup>
+            </div>
 
-          {/* Label */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Label (Optional)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Input
-                placeholder="Wake up, Meeting, Medication..."
-                value={label}
-                onChange={(e) => setLabel(e.target.value)}
-                className="h-12"
-              />
-            </CardContent>
-          </Card>
-
-          {/* Voice Recording */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mic className="h-5 w-5" />
-                Voice Message
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <VoiceRecorder onRecordingComplete={setVoiceRecording} />
-            </CardContent>
-          </Card>
-
-          {/* Save Button */}
-          <Button 
-            onClick={handleSaveAlarm} 
-            size="lg" 
-            className="w-full h-14 text-lg gap-2"
-          >
-            <Save className="h-5 w-5" />
+            <div>
+                <Label>Severity</Label>
+                <ToggleGroup type="single" value={severity} onValueChange={(value) => value && setSeverity(value as any)} className="justify-start">
+                    <ToggleGroupItem value="low"><Badge variant="default">Low</Badge></ToggleGroupItem>
+                    <ToggleGroupItem value="medium"><Badge variant="secondary">Medium</Badge></ToggleGroupItem>
+                    <ToggleGroupItem value="high"><Badge variant="destructive">High</Badge></ToggleGroupItem>
+                </ToggleGroup>
+            </div>
+        </div>
+        <DialogFooter className="p-6 border-t">
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={handleSave}>
+            {pendingAlarmAudio ? <Save className="h-4 w-4 mr-2" /> : null}
             Save Alarm
           </Button>
-        </div>
-      </div>
-    </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 };
-
-export default CreateAlarm;

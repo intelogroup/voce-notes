@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SimpleAudioRecorder } from '@/components/ui/simple-audio-recorder';
 import { Clock, Calendar as CalendarIcon, Save, X } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 import { useAlarmStore } from '@/store/alarmStore';
 import { useToast } from '@/hooks/use-toast';
 import { ClockTimePicker } from './clock-time-picker';
+import { createIcsFileContent } from '@/lib/calendar';
 
 interface CalendarRecordingModalProps {
   isOpen: boolean;
@@ -22,13 +23,48 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
   selectedDate
 }) => {
   const [time, setTime] = useState({ hour: 12, minute: 0 });
-  const [alarmLabel, setAlarmLabel] = useState('');
+  const [notes, setNotes] = useState('');
   const [recordingBlob, setRecordingBlob] = useState<Blob | null>(null);
   const { addAlarm } = useAlarmStore();
   const { toast } = useToast();
 
+  const isPastTime = useMemo(() => {
+    if (isToday(selectedDate)) {
+      const now = new Date();
+      const selectedDateTime = new Date(selectedDate);
+      selectedDateTime.setHours(time.hour, time.minute, 0, 0);
+      return selectedDateTime <= now;
+    }
+    return false;
+  }, [time, selectedDate]);
+
   const handleRecordingComplete = (blob: Blob) => {
     setRecordingBlob(blob);
+  };
+
+  const handleAddCalendarEvent = () => {
+    const startDate = new Date(selectedDate);
+    startDate.setHours(time.hour, time.minute, 0, 0);
+
+    const icsContent = createIcsFileContent({
+      title: notes || `Voice Note Reminder`,
+      description: 'A reminder from Voce Notes.',
+      startDate,
+    });
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "voce-note-event.ics");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast({
+      title: 'Calendar Event Created',
+      description: 'The .ics file has been downloaded.',
+    });
   };
 
   const handleSave = () => {
@@ -66,12 +102,15 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
     const alarmTime = `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`;
 
     addAlarm({
+      id: Date.now().toString(),
       time: alarmTime,
       date: selectedDate,
-      label: alarmLabel || `Alarm for ${format(selectedDate, 'MMM dd')}`,
+      label: notes || `Alarm for ${format(selectedDate, 'MMM dd')}`,
       isEnabled: true,
       voiceRecording,
       repeatDays: [],
+      createdAt: new Date(),
+      severity: 'medium',
     });
 
     toast({
@@ -84,7 +123,7 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
 
   const handleClose = () => {
     setTime({ hour: 12, minute: 0 });
-    setAlarmLabel('');
+    setNotes('');
     setRecordingBlob(null);
     onClose();
   };
@@ -109,16 +148,21 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
             <div className="flex justify-center">
               <ClockTimePicker onTimeChange={setTime} isOpen={isOpen} />
             </div>
+            {isPastTime && (
+                <p className="text-sm text-destructive text-center">
+                    Please select a future time for today's alarm.
+                </p>
+            )}
           </div>
 
-          {/* Label Input */}
+          {/* Notes Input */}
           <div className="space-y-2">
-            <Label htmlFor="label">Alarm Label (Optional)</Label>
+            <Label htmlFor="notes">Calendar Notes</Label>
             <Input
-              id="label"
-              placeholder="Enter alarm description..."
-              value={alarmLabel}
-              onChange={(e) => setAlarmLabel(e.target.value)}
+              id="notes"
+              placeholder="Enter notes..."
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
             />
           </div>
 
@@ -129,18 +173,28 @@ export const CalendarRecordingModal: React.FC<CalendarRecordingModalProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-3 pt-4">
-            <Button variant="outline" onClick={handleClose} className="flex-1">
-              <X className="h-4 w-4 mr-2" />
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleSave} 
-              className="flex-1"
-              disabled={!recordingBlob}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Save Alarm
+          <div className="space-y-3 pt-4">
+            <div className="flex gap-3">
+                <Button 
+                  onClick={handleAddCalendarEvent}
+                  className="flex-1"
+                >
+                  <CalendarIcon className="h-4 w-4 mr-2" />
+                  Add Calendar Event
+                </Button>
+                <Button 
+                    onClick={handleSave} 
+                    variant="outline"
+                    className="flex-1"
+                    disabled={!recordingBlob || isPastTime}
+                >
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Alarm
+                </Button>
+            </div>
+            <Button variant="outline" onClick={handleClose} className="w-full">
+                <X className="h-4 w-4 mr-2" />
+                Cancel
             </Button>
           </div>
         </div>

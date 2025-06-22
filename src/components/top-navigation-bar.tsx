@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Mic, User, Bell, Settings, ArrowLeft } from 'lucide-react';
+import { Mic, User, Bell, Settings, ArrowLeft, Music } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -39,6 +39,11 @@ export const TopNavigationBar: React.FC<TopNavigationBarProps> = ({ title }) => 
 
         <div className="flex items-center space-x-2">
           <ThemeToggle />
+          <Link to="/alarms/bank">
+            <Button variant="ghost" size="icon">
+              <Music className="h-5 w-5" />
+            </Button>
+          </Link>
           <Link to="/notifications">
             <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5" />

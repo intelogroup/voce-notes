@@ -1,30 +1,53 @@
-
 import React, { useState } from 'react';
 import { EnhancedMobileNavigation } from '@/components/enhanced-mobile-navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Search, Clock, Calendar, Mic, Trash2, Edit, Plus } from 'lucide-react';
+import { ArrowLeft, Search, Clock, Calendar as CalendarIcon, Mic, Trash2, Edit, Plus } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAlarmStore } from '@/store/alarmStore';
 import { CleanCard, CleanCardContent } from '@/components/ui/clean-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { Calendar } from '@/components/ui/calendar';
 
 const AlarmsTab = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { alarms, toggleAlarm, removeAlarm } = useAlarmStore();
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
 
-  const today = new Date().toDateString();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const processAlarms = (filterFn: (alarm: any) => boolean) => {
+    return alarms.filter(filterFn).reduce((acc, alarm) => {
+      const date = new Date(alarm.date);
+      const dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      if (!acc[dateString]) {
+        acc[dateString] = 0;
+      }
+      acc[dateString]++;
+      return acc;
+    }, {} as Record<string, number>);
+  };
+
+  const todayAlarmsByDate = processAlarms(a => new Date(a.date).toDateString() === today.toDateString());
+  const upcomingAlarmsByDate = processAlarms(a => new Date(a.date) > today);
+  const pastAlarmsByDate = processAlarms(a => new Date(a.date) < today);
+
+  const selectedDayAlarms = alarms.filter(alarm => 
+    selectedDate && new Date(alarm.date).toDateString() === selectedDate.toDateString()
+  );
+
   const todayAlarms = alarms.filter(alarm => 
-    new Date(alarm.date).toDateString() === today
+    new Date(alarm.date).toDateString() === today.toDateString()
   );
   const upcomingAlarms = alarms.filter(alarm => 
-    new Date(alarm.date) > new Date() && new Date(alarm.date).toDateString() !== today
+    new Date(alarm.date) > today
   );
   const pastAlarms = alarms.filter(alarm => 
-    new Date(alarm.date) < new Date() && new Date(alarm.date).toDateString() !== today
+    new Date(alarm.date) < today
   );
 
   const filteredAlarms = (alarmList: typeof alarms) => {
@@ -62,7 +85,7 @@ const AlarmsTab = () => {
               
               {showDate && (
                 <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
+                  <CalendarIcon className="h-3 w-3" />
                   {new Date(alarm.date).toLocaleDateString()}
                 </div>
               )}
@@ -170,7 +193,7 @@ const AlarmsTab = () => {
 
         {/* Alarm Tabs */}
         <Tabs defaultValue="today" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-muted/30 p-1 h-11 rounded-lg">
+          <TabsList className="grid w-full grid-cols-4 bg-muted/30 p-1 h-11 rounded-lg">
             <TabsTrigger 
               value="today" 
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all font-medium"
@@ -188,6 +211,12 @@ const AlarmsTab = () => {
               className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all font-medium"
             >
               Past
+            </TabsTrigger>
+            <TabsTrigger 
+              value="calendar"
+              className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm transition-all font-medium"
+            >
+              Calendar
             </TabsTrigger>
           </TabsList>
 
@@ -219,6 +248,29 @@ const AlarmsTab = () => {
             ) : (
               <EmptyState message="No past alarms" />
             )}
+          </TabsContent>
+
+          <TabsContent value="calendar" className="mt-6">
+            <div className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                todayAlarmsByDate={todayAlarmsByDate}
+                upcomingAlarmsByDate={upcomingAlarmsByDate}
+                pastAlarmsByDate={pastAlarmsByDate}
+                className="rounded-md border"
+              />
+            </div>
+            <div className="space-y-3 mt-6">
+              {selectedDayAlarms.length > 0 ? (
+                selectedDayAlarms.map((alarm) => (
+                  <AlarmCard key={alarm.id} alarm={alarm} showDate />
+                ))
+              ) : (
+                <EmptyState message="No alarms for this day" />
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>
